@@ -12,6 +12,8 @@ const DEFAULT_SETTINGS = {
   googleCloudRegion: 'us-central1',
 };
 
+const DEFAULT_ASSISTANT_RESPONSE = "I couldn't generate a response just now. Please try again.";
+
 const modeCopy = {
   ask: {
     systemPrompt: 'You are Voyager, a helpful AI companion. Answer clearly, practically, and directly.',
@@ -213,20 +215,18 @@ async function sendPrompt() {
     if (!response.ok) {
       throw new Error(`Backend request failed with status ${response.status}`);
     }
-
     const payload = await response.json();
-    const answer = payload.answer || 'I did not receive a response from the backend.';
+    const answer =
+      typeof payload.answer === 'string' && payload.answer.trim()
+        ? payload.answer
+        : DEFAULT_ASSISTANT_RESPONSE;
 
     chat.messages.push({ role: 'assistant', content: answer });
     persistChats();
     renderMessages(chat);
   } catch (error) {
-    const fallback =
-      settings.apiKey.length > 0
-        ? 'The backend request failed. Please verify your server and configuration.'
-        : 'The demo backend is active. Add your provider credentials to enable a live model response.';
-
-    chat.messages.push({ role: 'assistant', content: fallback });
+    console.error('Chat request failed:', error);
+    chat.messages.push({ role: 'assistant', content: DEFAULT_ASSISTANT_RESPONSE });
     persistChats();
     renderMessages(chat);
   }
