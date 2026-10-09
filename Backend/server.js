@@ -1,32 +1,38 @@
-import express from 'express';
-import path from 'path';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import fetch from 'node-fetch';
-import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
-dotenv.config();
+const users = []; // temporary in‑memory store; replace with a database later
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-const WEB_ROOT = path.join(__dirname, '..');
-
-app.use(cors());
-app.use(express.json({ limit: '2mb' }));
-
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    service: 'Voyager Web Chat',
-    provider: resolveProvider({}),
-    timestamp: new Date().toISOString(),
-  });
+app.post('/api/signup', async (req, res) => {
+  const { username, password } = req.body;
+  const hashed = await bcrypt.hash(password, 10);
+  users.push({ username, password: hashed });
+  res.json({ ok: true, message: 'User registered successfully.' });
 });
 
-app.post('/api/chat', async (req, res) => {
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find(u => u.username === username);
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ error: 'Invalid credentials.' });
+  }
+  const token = jwt.sign({ username }, process.env.JWT_SECRET || 'secret', { expiresIn: '2h' });
+  res.json({ ok: true, token });
+});
+
+function authenticate(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Missing token.' });
+  const token = authHeader.split(' ')[1];
+  try {
+    jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    next();
+  } catch {
+    res.status(403).json({ error: 'Invalid token.' });
+  }
+}
+
+app.post('/api/chat', authenticate, async (req, res) => {
   try {
     const { messages = [], mode = 'ask', settings = {} } = req.body || {};
     const normalizedMessages = Array.isArray(messages) ? messages : [];

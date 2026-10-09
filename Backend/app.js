@@ -354,6 +354,39 @@ function attachEventListeners() {
   });
 }
 
+function saveToken(token) {
+  localStorage.setItem('voyager-token', token);
+}
+
+async function login(username, password) {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+  if (data.ok) saveToken(data.token);
+}
+
+const token = localStorage.getItem('voyager-token');
+const response = await fetch('/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ mode: state.currentMode, settings, messages }),
+});
+const chatData = await response.json();
+async function signup(username, password) {
+  const res = await fetch('/api/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+  return data;
+}
 function initializeApp() {
   state.chats = readChats();
   const savedActiveChat = localStorage.getItem(STORAGE_KEYS.activeChat);
