@@ -1,62 +1,22 @@
 # Voyager Web Chat
 
-A dark, ChatGPT-inspired web chat app with Ask and Agent modes, built as a frontend-only interface that uses your configured API key and OpenAI-compatible endpoints.
+Voyager is a web chat app served by an Express backend. The backend serves the
+website and handles chat requests, so run it instead of opening `index.html`
+directly or starting a static-only web server.
 
-## Features
-
-- dark ChatGPT-like layout matching the reference mockup
-- left sidebar with chats, pins, and projects
-- `Chat` and `Work` mode switch
-- API-first design using OpenAI-compatible endpoints
-- no backend required; uses browser fetch calls against your API provider
-- local storage for chat history and settings
-- responsive layout for smaller screens
-
-## Run it locally
-
-Because this is a static app, you can run it in any web server:
+## Run locally
 
 ```bash
-cd Voyager-Web-Chat
-python3 -m http.server 3000
+cd Backend
+npm install
+npm start
 ```
 
-Then open:
+Open <http://localhost:3000>.
 
-```text
-http://localhost:3000
-```
+Without provider credentials, chat returns a demo response. To get live model
+responses, either enter an OpenAI-compatible API base URL, API key, and model
+in the website's settings, or configure `OPENAI_API_KEY` in a `Backend/.env`
+file. See `.env.example` for supported environment variables.
 
-## Configure the API
-
-Click the gear icon in the top-right corner and set:
-
-- Base URL: `https://api.openai.com/v1`
-- API Key: your secret key
-- Model: `gpt-4o-mini`
-
-You can also use compatible providers like OpenRouter by changing the base URL to something like:
-
-```text
-https://openrouter.ai/api/v1
-```
-
-Example model names for OpenRouter include:
-
-```text
-openai/gpt-4o-mini
-anthropic/claude-3.5-sonnet
-```
-
-## Notes
-
-- This app is intentionally frontend-only.
-- It relies entirely on API calls from the browser.
-- No data is stored server-side.
-- Chat history and settings are kept in browser local storage.
-
-## Important
-
-This app expects an API provider that supports the OpenAI `/chat/completions` schema.
-
-If the provider does not use that format, update the request body or endpoint accordingly.
+Chat history and website settings are stored in the browser's local storage.

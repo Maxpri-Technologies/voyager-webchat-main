@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const WEB_ROOT = path.join(__dirname, '..');
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
@@ -30,6 +31,7 @@ app.post('/api/chat', async (req, res) => {
     const systemPrompt = getSystemPrompt(mode);
     const requestSettings = {
       model: settings.apiModel || process.env.OPENAI_MODEL || process.env.GEMINI_MODEL || 'gpt-4o-mini',
+      apiKey: settings.apiKey || process.env.OPENAI_API_KEY || '',
       googleCloudProjectId: settings.googleCloudProjectId || process.env.GOOGLE_CLOUD_PROJECT_ID || '',
       googleCloudRegion: settings.googleCloudRegion || process.env.GOOGLE_CLOUD_REGION || 'us-central1',
       apiBaseUrl: settings.apiBaseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
@@ -46,9 +48,12 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname)));
+app.use('/FrontEnd', express.static(path.join(WEB_ROOT, 'FrontEnd')));
+app.get('/Backend/app.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'app.js'));
+});
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(WEB_ROOT, 'index.html'));
 });
 
 app.listen(PORT, () => {
@@ -93,7 +98,7 @@ async function generateResponse(messages, systemPrompt, settings) {
 }
 
 async function callOpenAI(messages, systemPrompt, settings) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = settings.apiKey || process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return buildDemoResponse(messages, systemPrompt);
   }
