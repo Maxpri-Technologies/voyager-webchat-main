@@ -31,7 +31,10 @@ body { background: var(--bg); color: var(--white); }
 .empty-state h1 { color: #e3f8fb; font-weight: 600; }
 .welcome-kicker { margin-bottom: 12px; color: #66d6e7; font-size: .72rem; font-weight: 700; letter-spacing: .2em; }
 .empty-state p { color: var(--muted); margin: 13px 0 0; font-size: .95rem; }
-.composer { border-color: rgba(102,214,231,.16); background: rgba(18,38,48,.82); }
+.composer { width: min(860px,calc(100% - 72px)); border: 1px solid rgba(255,255,255,.06); box-shadow: 0 14px 28px rgba(0,0,0,.25); border-radius: 22px; display: flex; align-items: flex-end; gap: 10px; padding: 10px 12px 10px 10px; }
+.plus-button { width: 32px; height: 32px; font-size: 2rem; color: var(--muted); }
+#promptInput { flex: 1; border: 0; background: transparent; color: var(--white); min-height: 40px; max-height: 150px; resize: none; outline: 0; padding: 8px 2px 6px; }
+#promptInput::placeholder { color: var(--soft); }
 .tool-button.send-button { background: linear-gradient(135deg, #65d9e8, #3989ec); color: #06151e; font-size: 1.35rem; font-weight: 700; }
 .primary-btn { background: linear-gradient(135deg, #65d9e8, #3989ec); color: #06151e; }
 .message-row.user .message-bubble { background: rgba(83,198,223,.14); border-color: rgba(83,198,223,.18); }
