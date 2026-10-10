@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071018" />
+    <title>Voyager subscription</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="FrontEnd/styles.css" />
+    <link rel="stylesheet" href="FrontEnd/login.css" />
+    <script src="Backend/subscribe.js" defer></script>
+  </head>
+  <body class="login-page">
+    <main class="login-card subscription-card">
+      <a class="login-brand" href="/" aria-label="Voyager home">
+        <span class="brand-mark">V</span>
+        <span>Voyager</span>
+      </a>
+      <p class="welcome-kicker">VOYAGER MEMBERSHIP</p>
+      <h1>Unlock your next journey</h1>
+      <p class="subscription-price"><strong>$5</strong><span>USD / month</span></p>
+      <p class="login-description">Subscribe securely with PayPal to unlock Voyager. Your subscription renews monthly until canceled.</p>
+      <div id="paypalButton" class="paypal-button"></div>
+      <p id="subscriptionStatus" class="login-status" role="status" aria-live="polite">Loading secure checkout…</p>
+      <button id="signOutButton" class="subscription-signout" type="button">Sign out</button>
+    </main>
+  </body>
+</html>

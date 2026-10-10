@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="FrontEnd/styles.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -40,9 +40,9 @@
         </div>
 
         <div class="user-card">
-          <div class="profile-round">D</div>
-          <div class="profile-meta"><span class="name">Daniel Aron</span><span class="plan">Personal plan</span></div>
-          <button class="icon-button" aria-label="Account menu">•••</button>
+          <div class="profile-round" id="profileAvatar">V</div>
+          <div class="profile-meta"><span class="name" id="profileName">Account</span><span class="plan" id="profileDetails"></span></div>
+          <button class="icon-button" id="accountAction" type="button">Sign out</button>
         </div>
       </aside>
 
@@ -92,6 +92,6 @@
         <div class="form-actions"><button class="secondary-btn" id="resetSettings">Reset</button><button class="primary-btn" id="saveSettings">Save</button></div>
       </div>
     </div>
-    <script src="app.js"></script>
+    <script src="Backend/app.js"></script>
   </body>
 </html>

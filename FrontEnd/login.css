@@ -1,0 +1,132 @@
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 50% 0, rgba(41, 113, 133, .2), transparent 55%),
+    var(--bg);
+  color: var(--white);
+}
+
+.login-card {
+  width: min(100%, 440px);
+  padding: 38px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(11, 23, 32, .92);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .32);
+  text-align: center;
+}
+
+.login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  color: #dffbff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-card .welcome-kicker {
+  margin-bottom: 10px;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 6vw, 2.1rem);
+  font-weight: 600;
+}
+
+.login-description,
+.login-footnote {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.login-description {
+  margin: 14px 0 26px;
+}
+
+.google-signin {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.google-signin-placeholder {
+  width: min(100%, 320px);
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.login-status {
+  min-height: 24px;
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+
+.login-status.error {
+  color: #ffaaa5;
+}
+
+.login-server-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #9de5f0;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.subscription-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 9px;
+  margin: 22px 0 4px;
+  color: var(--muted);
+}
+
+.subscription-price strong {
+  color: var(--white);
+  font-size: 2.7rem;
+  letter-spacing: -.06em;
+}
+
+.subscription-price span {
+  font-size: .9rem;
+}
+
+.paypal-button {
+  min-height: 48px;
+}
+
+.subscription-signout {
+  margin: 2px 0 18px;
+  color: #9de5f0;
+  font-weight: 600;
+}
+
+.subscription-signout:hover {
+  text-decoration: underline;
+}
+
+.login-footnote {
+  margin: 0;
+  font-size: .77rem;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 30px 22px;
+  }
+}
