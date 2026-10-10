@@ -8,8 +8,6 @@ const DEFAULT_SETTINGS = {
   apiBaseUrl: 'https://api.openai.com/v1',
   apiKey: '',
   apiModel: 'gpt-4o-mini',
-  googleCloudProjectId: '',
-  googleCloudRegion: 'us-central1',
 };
 
 const DEFAULT_ASSISTANT_RESPONSE = "I couldn't generate a response just now. Please try again.";
@@ -25,11 +23,9 @@ const modeCopy = {
 
 const state = {
   currentMode: 'ask',
-  isSidebarCollapsed: false,
   isSending: false,
   chats: [],
   activeChatId: null,
-  user: null,
 };
 
 function readSettings() {
@@ -61,68 +57,11 @@ function persistChats() {
   }
 }
 
-function renderAccount() {
-  const user = state.user;
-  const avatar = document.getElementById('profileAvatar');
-  const name = document.getElementById('profileName');
-  const details = document.getElementById('profileDetails');
-  const action = document.getElementById('accountAction');
-
-  if (avatar) avatar.textContent = user ? user.name.trim().charAt(0).toUpperCase() || 'V' : 'V';
-  if (name) name.textContent = user ? user.name : 'Account';
-  if (details) details.textContent = user ? user.email : '';
-  if (action) action.textContent = 'Sign out';
-}
-
-async function handleAccountAction() {
-  if (state.user) {
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (!response.ok) {
-        throw new Error(`Sign-out failed with status ${response.status}.`);
-      }
-      state.user = null;
-      renderAccount();
-      window.location.replace('/login');
-    } catch (error) {
-      console.error('Could not sign out:', error);
-    }
-    return;
-  }
-
-  window.location.href = '/login';
-}
-
-async function loadAccount() {
-  try {
-    const response = await fetch('/api/auth/me');
-    if (response.status === 401 || response.status === 403) {
-      window.location.replace('/login');
-      return;
-    } else if (!response.ok) {
-      throw new Error(`Could not load account (${response.status}).`);
-    } else {
-      const payload = await response.json();
-      if (!payload.subscriptionActive) {
-        window.location.replace('/subscribe');
-        return;
-      }
-      state.user = payload.user;
-    }
-  } catch (error) {
-    console.error('Could not load account:', error);
-  } finally {
-    renderAccount();
-  }
-}
-
 function setMode(mode) {
   state.currentMode = mode;
 
-  document.querySelectorAll('.mode-button').forEach((button) => {
-    button.classList.toggle('active', button.dataset.mode === mode);
-  });
-
+  const modeSelect = document.getElementById('modeSelect');
+  if (modeSelect) modeSelect.value = mode;
   const promptInput = document.getElementById('promptInput');
   if (promptInput) {
     promptInput.placeholder = modeCopy[mode].placeholder;
@@ -158,7 +97,7 @@ function renderChatList() {
     button.type = 'button';
     button.className = `chat-item ${chat.id === state.activeChatId ? 'active' : ''}`;
     button.dataset.chatId = chat.id;
-    button.innerHTML = '<span class="nav-icon">◦</span><span class="title">' + escapeHtml(chat.title) + '</span>';
+    button.textContent = chat.title;
 
     button.addEventListener('click', () => {
       state.activeChatId = chat.id;
@@ -168,15 +107,6 @@ function renderChatList() {
 
     chatList.appendChild(button);
   });
-}
-
-function escapeHtml(value) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 function renderMessages(chat) {
@@ -189,12 +119,8 @@ function renderMessages(chat) {
   const hasMessages = Boolean(chat?.messages?.length);
   messagesEl.classList.toggle('visible', hasMessages);
 
-  if (!hasMessages) {
-    emptyState.style.display = 'block';
-    return;
-  }
-
-  emptyState.style.display = 'none';
+  emptyState.hidden = hasMessages;
+  if (!hasMessages) return;
 
   chat.messages.forEach((message) => {
     const row = document.createElement('div');
@@ -235,7 +161,7 @@ async function sendPrompt() {
   if (sendButton) sendButton.disabled = true;
 
   chat.messages.push({ role: 'user', content: prompt });
-  chat.title = prompt.length > 24 ? `${prompt.slice(0, 24)}…` : prompt;
+  chat.title = prompt.length > 24 ? `${prompt.slice(0, 24)}...` : prompt;
   persistChats();
   renderChatList();
   renderMessages(chat);
@@ -288,12 +214,6 @@ async function sendPrompt() {
   }
 }
 
-function toggleSidebar() {
-  state.isSidebarCollapsed = !state.isSidebarCollapsed;
-  document.querySelector('.sidebar')?.classList.toggle('collapsed', state.isSidebarCollapsed);
-  document.querySelector('.app-shell')?.classList.toggle('sidebar-collapsed', state.isSidebarCollapsed);
-}
-
 function openSettingsModal() {
   const modal = document.getElementById('settingsModal');
   if (!modal) return;
@@ -302,15 +222,12 @@ function openSettingsModal() {
   document.getElementById('apiBaseUrl').value = settings.apiBaseUrl;
   document.getElementById('apiKey').value = settings.apiKey;
   document.getElementById('apiModel').value = settings.apiModel;
-  document.getElementById('googleCloudProjectId').value = settings.googleCloudProjectId;
-  document.getElementById('googleCloudRegion').value = settings.googleCloudRegion;
-  modal.classList.remove('hidden');
+  modal.showModal();
 }
 
 function closeSettingsModal() {
   const modal = document.getElementById('settingsModal');
-  if (!modal) return;
-  modal.classList.add('hidden');
+  if (modal?.open) modal.close();
 }
 
 function handleSaveSettings() {
@@ -318,8 +235,6 @@ function handleSaveSettings() {
     apiBaseUrl: document.getElementById('apiBaseUrl').value.trim() || DEFAULT_SETTINGS.apiBaseUrl,
     apiKey: document.getElementById('apiKey').value.trim(),
     apiModel: document.getElementById('apiModel').value.trim() || DEFAULT_SETTINGS.apiModel,
-    googleCloudProjectId: document.getElementById('googleCloudProjectId').value.trim(),
-    googleCloudRegion: document.getElementById('googleCloudRegion').value.trim() || DEFAULT_SETTINGS.googleCloudRegion,
   };
 
   saveSettings(settings);
@@ -331,49 +246,23 @@ function handleResetSettings() {
   document.getElementById('apiBaseUrl').value = defaults.apiBaseUrl;
   document.getElementById('apiKey').value = defaults.apiKey;
   document.getElementById('apiModel').value = defaults.apiModel;
-  document.getElementById('googleCloudProjectId').value = defaults.googleCloudProjectId;
-  document.getElementById('googleCloudRegion').value = defaults.googleCloudRegion;
   saveSettings(defaults);
 }
 
 function attachEventListeners() {
-  document.querySelector('.collapse-button')?.addEventListener('click', toggleSidebar);
-  document.querySelector('.start-button')?.addEventListener('click', handleNewChat);
-
-  document.querySelectorAll('.nav-item').forEach((button) => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
-      button.classList.add('active');
-    });
-  });
-
-  document.querySelectorAll('.mode-button').forEach((button) => {
-    button.addEventListener('click', () => setMode(button.dataset.mode));
-  });
+  document.getElementById('newChatButton')?.addEventListener('click', handleNewChat);
+  document.getElementById('modeSelect')?.addEventListener('change', (event) => setMode(event.target.value));
 
   document.getElementById('settingsButton')?.addEventListener('click', openSettingsModal);
   document.getElementById('closeSettings')?.addEventListener('click', closeSettingsModal);
   document.getElementById('saveSettings')?.addEventListener('click', handleSaveSettings);
   document.getElementById('resetSettings')?.addEventListener('click', handleResetSettings);
-  document.getElementById('accountAction')?.addEventListener('click', handleAccountAction);
 
-  document.getElementById('sendButton')?.addEventListener('click', sendPrompt);
-  document.getElementById('promptInput')?.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      sendPrompt();
-    }
+  document.getElementById('composerForm')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    sendPrompt();
   });
-
-  document.querySelector('.plus-button')?.addEventListener('click', () => {
-    document.getElementById('promptInput')?.focus();
-  });
-
-  document.getElementById('settingsModal')?.addEventListener('click', (event) => {
-    if (event.target.id === 'settingsModal') {
-      closeSettingsModal();
-    }
-  });
+  document.getElementById('settingsForm')?.addEventListener('submit', (event) => event.preventDefault());
 }
 
 function initializeApp() {
@@ -382,8 +271,6 @@ function initializeApp() {
   state.activeChatId = state.chats.some((chat) => chat.id === savedActiveChat) ? savedActiveChat : state.chats[0]?.id || null;
 
   attachEventListeners();
-  renderAccount();
-  loadAccount();
   setMode(state.currentMode);
   renderChatList();
   renderMessages(getActiveChat());
@@ -392,8 +279,6 @@ function initializeApp() {
   document.getElementById('apiBaseUrl').value = settings.apiBaseUrl;
   document.getElementById('apiKey').value = settings.apiKey;
   document.getElementById('apiModel').value = settings.apiModel;
-  document.getElementById('googleCloudProjectId').value = settings.googleCloudProjectId;
-  document.getElementById('googleCloudRegion').value = settings.googleCloudRegion;
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
