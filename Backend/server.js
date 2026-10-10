@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import path from 'node:path';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +13,6 @@ if (!process.env.SESSION_SECRET) {
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const app = express();
 
-app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/api/health', (req, res) => {
@@ -132,29 +130,41 @@ app.post('/api/billing/confirm', async (req, res) => {
 app.post('/api/chat', requireActiveSubscription, async (req, res) => {
   try {
     const { messages = [], mode = 'ask', settings = {} } = req.body || {};
-    const normalizedMessages = Array.isArray(messages) ? messages : [];
-
-    if (!normalizedMessages.length) {
-      return res.status(400).json({ error: 'No messages provided.' });
+    const safeSettings = settings && typeof settings === 'object' && !Array.isArray(settings)
+      ? settings
+      : {};
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 100) {
+      return res.status(400).json({ error: 'Provide between 1 and 100 messages.' });
     }
 
-    const systemPrompt = getSystemPrompt(mode);
+    const normalizedMessages = messages.map((message) => {
+      if (
+        !message ||
+        !['user', 'assistant'].includes(message.role) ||
+        typeof message.content !== 'string' ||
+        !message.content.trim() ||
+        message.content.length > 20000
+      ) return null;
+      return { role: message.role, content: message.content.trim() };
+    });
+    if (normalizedMessages.some((message) => message === null)) {
+      return res.status(400).json({ error: 'Each message must have a valid role and non-empty text under 20,000 characters.' });
+    }
+
+    const systemPrompt = getSystemPrompt(mode === 'agent' ? 'agent' : 'ask');
     const requestSettings = {
-      model: settings.apiModel || process.env.OPENAI_MODEL || process.env.GEMINI_MODEL || 'gpt-4o-mini',
-      apiKey: settings.apiKey || process.env.OPENAI_API_KEY || '',
-      googleCloudProjectId: settings.googleCloudProjectId || process.env.GOOGLE_CLOUD_PROJECT_ID || '',
-      googleCloudRegion: settings.googleCloudRegion || process.env.GOOGLE_CLOUD_REGION || 'us-central1',
-      apiBaseUrl: settings.apiBaseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+      model: safeSettings.apiModel || process.env.OPENAI_MODEL || process.env.GEMINI_MODEL || 'gpt-4o-mini',
+      apiKey: safeSettings.apiKey || process.env.OPENAI_API_KEY || '',
+      googleCloudProjectId: safeSettings.googleCloudProjectId || process.env.GOOGLE_CLOUD_PROJECT_ID || '',
+      googleCloudRegion: safeSettings.googleCloudRegion || process.env.GOOGLE_CLOUD_REGION || 'us-central1',
+      apiBaseUrl: safeSettings.apiBaseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     };
 
     const answer = await generateResponse(normalizedMessages, systemPrompt, requestSettings);
     return res.json({ answer });
   } catch (error) {
     console.error('Chat request failed:', error);
-    return res.status(500).json({
-      error: 'The chat backend could not generate a response.',
-      detail: error.message,
-    });
+    return res.status(500).json({ error: 'The chat backend could not generate a response.' });
   }
 });
 

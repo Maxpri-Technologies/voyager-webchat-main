@@ -16,11 +16,9 @@ const DEFAULT_ASSISTANT_RESPONSE = "I couldn't generate a response just now. Ple
 
 const modeCopy = {
   ask: {
-    systemPrompt: 'You are Voyager, a helpful AI companion. Answer clearly, practically, and directly.',
     placeholder: 'Ask Voyager anything',
   },
   agent: {
-    systemPrompt: 'You are Voyager Agent. Break complex requests into a thoughtful plan, explain progress clearly, and provide actionable results. If code is requested, provide production-ready code.',
     placeholder: 'Give Voyager Agent a mission',
   },
 };
@@ -63,12 +61,8 @@ function persistChats() {
   }
 }
 
-function readUser() {
-  return state.user;
-}
-
 function renderAccount() {
-  const user = readUser();
+  const user = state.user;
   const avatar = document.getElementById('profileAvatar');
   const name = document.getElementById('profileName');
   const details = document.getElementById('profileDetails');
@@ -81,7 +75,7 @@ function renderAccount() {
 }
 
 async function handleAccountAction() {
-  if (readUser()) {
+  if (state.user) {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
       if (!response.ok) {
@@ -217,19 +211,6 @@ function renderMessages(chat) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function addMessage(role, content) {
-  const chat = getActiveChat();
-  if (!chat) {
-    createChat('New journey');
-  }
-
-  const activeChat = getActiveChat();
-  activeChat.messages.push({ role, content });
-  persistChats();
-  renderChatList();
-  renderMessages(activeChat);
-}
-
 function handleNewChat() {
   const input = document.getElementById('promptInput');
   if (input) input.focus();
@@ -290,7 +271,7 @@ async function sendPrompt() {
 
     chat.messages.push({ role: 'assistant', content: answer });
     persistChats();
-    renderMessages(getActiveChat());
+    if (state.activeChatId === chat.id) renderMessages(chat);
   } catch (error) {
     console.error('Chat request failed:', error);
     const detail = error instanceof Error ? error.message : String(error);
@@ -300,7 +281,7 @@ async function sendPrompt() {
         : `Voyager could not generate a response (${detail}). Check the server and API settings, then try again.`;
     chat.messages.push({ role: 'assistant', content: message });
     persistChats();
-    renderMessages(getActiveChat());
+    if (state.activeChatId === chat.id) renderMessages(chat);
   } finally {
     state.isSending = false;
     if (sendButton) sendButton.disabled = false;
@@ -330,41 +311,6 @@ function closeSettingsModal() {
   const modal = document.getElementById('settingsModal');
   if (!modal) return;
   modal.classList.add('hidden');
-}
-
-function buildGoogleCloudEndpoint(settings) {
-  const projectId = (settings.googleCloudProjectId || '').trim();
-  const region = (settings.googleCloudRegion || '').trim();
-
-  if (!projectId || !region) {
-    return null;
-  }
-
-  const model = (settings.apiModel || DEFAULT_SETTINGS.apiModel).trim();
-  return `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:generateContent`;
-}
-
-function buildGoogleCloudBody(messages, systemPrompt) {
-  const contents = messages.map((message) => ({
-    role: message.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: message.content }],
-  }));
-
-  return {
-    contents,
-    systemInstruction: {
-      parts: [{ text: systemPrompt }],
-    },
-  };
-}
-
-function parseGoogleCloudResponse(payload) {
-  const text = payload?.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text || '')
-    .join('')
-    .trim();
-
-  return text || 'I did not receive a response from the Google Cloud model.';
 }
 
 function handleSaveSettings() {
@@ -430,27 +376,6 @@ function attachEventListeners() {
   });
 }
 
-async function legacyAuthRequest() {
-  const token = localStorage.getItem('voyager-token');
-const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify({ mode: state.currentMode, settings, messages }),
-});
-const chatData = await response.json();
-}
-async function signup(username, password) {
-  const res = await fetch('/api/signup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  const data = await res.json();
-  return data;
-}
 function initializeApp() {
   state.chats = readChats();
   const savedActiveChat = localStorage.getItem(STORAGE_KEYS.activeChat);
