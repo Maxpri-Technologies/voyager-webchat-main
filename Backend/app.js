@@ -28,8 +28,10 @@ const modeCopy = {
 const state = {
   currentMode: 'ask',
   isSidebarCollapsed: false,
+  isSending: false,
   chats: [],
   activeChatId: null,
+  user: null,
 };
 
 function readSettings() {
@@ -58,6 +60,65 @@ function persistChats() {
   localStorage.setItem(STORAGE_KEYS.chats, JSON.stringify(state.chats));
   if (state.activeChatId) {
     localStorage.setItem(STORAGE_KEYS.activeChat, state.activeChatId);
+  }
+}
+
+function readUser() {
+  return state.user;
+}
+
+function renderAccount() {
+  const user = readUser();
+  const avatar = document.getElementById('profileAvatar');
+  const name = document.getElementById('profileName');
+  const details = document.getElementById('profileDetails');
+  const action = document.getElementById('accountAction');
+
+  if (avatar) avatar.textContent = user ? user.name.trim().charAt(0).toUpperCase() || 'V' : 'V';
+  if (name) name.textContent = user ? user.name : 'Account';
+  if (details) details.textContent = user ? user.email : '';
+  if (action) action.textContent = 'Sign out';
+}
+
+async function handleAccountAction() {
+  if (readUser()) {
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Sign-out failed with status ${response.status}.`);
+      }
+      state.user = null;
+      renderAccount();
+      window.location.replace('/login');
+    } catch (error) {
+      console.error('Could not sign out:', error);
+    }
+    return;
+  }
+
+  window.location.href = '/login';
+}
+
+async function loadAccount() {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.status === 401 || response.status === 403) {
+      window.location.replace('/login');
+      return;
+    } else if (!response.ok) {
+      throw new Error(`Could not load account (${response.status}).`);
+    } else {
+      const payload = await response.json();
+      if (!payload.subscriptionActive) {
+        window.location.replace('/subscribe');
+        return;
+      }
+      state.user = payload.user;
+    }
+  } catch (error) {
+    console.error('Could not load account:', error);
+  } finally {
+    renderAccount();
   }
 }
 
@@ -131,8 +192,10 @@ function renderMessages(chat) {
   if (!messagesEl || !emptyState) return;
 
   messagesEl.innerHTML = '';
+  const hasMessages = Boolean(chat?.messages?.length);
+  messagesEl.classList.toggle('visible', hasMessages);
 
-  if (!chat || !chat.messages.length) {
+  if (!hasMessages) {
     emptyState.style.display = 'block';
     return;
   }
@@ -176,7 +239,7 @@ function handleNewChat() {
 
 async function sendPrompt() {
   const promptInput = document.getElementById('promptInput');
-  if (!promptInput) return;
+  if (!promptInput || state.isSending) return;
 
   const prompt = promptInput.value.trim();
   if (!prompt) return;
@@ -186,6 +249,10 @@ async function sendPrompt() {
   }
 
   const chat = getActiveChat();
+  state.isSending = true;
+  const sendButton = document.getElementById('sendButton');
+  if (sendButton) sendButton.disabled = true;
+
   chat.messages.push({ role: 'user', content: prompt });
   chat.title = prompt.length > 24 ? `${prompt.slice(0, 24)}…` : prompt;
   persistChats();
@@ -223,12 +290,20 @@ async function sendPrompt() {
 
     chat.messages.push({ role: 'assistant', content: answer });
     persistChats();
-    renderMessages(chat);
+    renderMessages(getActiveChat());
   } catch (error) {
     console.error('Chat request failed:', error);
-    chat.messages.push({ role: 'assistant', content: DEFAULT_ASSISTANT_RESPONSE });
+    const detail = error instanceof Error ? error.message : String(error);
+    const message =
+      error instanceof TypeError
+        ? 'Could not connect to Voyager. Start the backend from the Backend folder with `npm start`, then open http://localhost:3000.'
+        : `Voyager could not generate a response (${detail}). Check the server and API settings, then try again.`;
+    chat.messages.push({ role: 'assistant', content: message });
     persistChats();
-    renderMessages(chat);
+    renderMessages(getActiveChat());
+  } finally {
+    state.isSending = false;
+    if (sendButton) sendButton.disabled = false;
   }
 }
 
@@ -334,6 +409,7 @@ function attachEventListeners() {
   document.getElementById('closeSettings')?.addEventListener('click', closeSettingsModal);
   document.getElementById('saveSettings')?.addEventListener('click', handleSaveSettings);
   document.getElementById('resetSettings')?.addEventListener('click', handleResetSettings);
+  document.getElementById('accountAction')?.addEventListener('click', handleAccountAction);
 
   document.getElementById('sendButton')?.addEventListener('click', sendPrompt);
   document.getElementById('promptInput')?.addEventListener('keydown', (event) => {
@@ -354,21 +430,8 @@ function attachEventListeners() {
   });
 }
 
-function saveToken(token) {
-  localStorage.setItem('voyager-token', token);
-}
-
-async function login(username, password) {
-  const res = await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  const data = await res.json();
-  if (data.ok) saveToken(data.token);
-}
-
-const token = localStorage.getItem('voyager-token');
+async function legacyAuthRequest() {
+  const token = localStorage.getItem('voyager-token');
 const response = await fetch('/api/chat', {
   method: 'POST',
   headers: {
@@ -378,6 +441,7 @@ const response = await fetch('/api/chat', {
   body: JSON.stringify({ mode: state.currentMode, settings, messages }),
 });
 const chatData = await response.json();
+}
 async function signup(username, password) {
   const res = await fetch('/api/signup', {
     method: 'POST',
@@ -393,6 +457,8 @@ function initializeApp() {
   state.activeChatId = state.chats.some((chat) => chat.id === savedActiveChat) ? savedActiveChat : state.chats[0]?.id || null;
 
   attachEventListeners();
+  renderAccount();
+  loadAccount();
   setMode(state.currentMode);
   renderChatList();
   renderMessages(getActiveChat());
