@@ -1,97 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Voyager</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="FrontEnd/styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand-row">
-          <div class="brand-mark">V</div>
-          <div class="brand">Voyager</div>
-          <button class="collapse-button" aria-label="Collapse sidebar">‹</button>
+      <aside class="sidebar" aria-label="Chats">
+        <div class="sidebar-header">
+          <strong>Voyager</strong>
+          <button id="newChatButton" type="button">New chat</button>
         </div>
-
-        <button class="start-button" data-action="new-chat"><span>＋</span> Start a journey</button>
-
-        <nav class="nav-group primary-nav" aria-label="Main navigation">
-          <button class="nav-item active"><span class="nav-icon">⌂</span><span>Overview</span></button>
-          <button class="nav-item"><span class="nav-icon">◇</span><span>Discover</span></button>
-          <button class="nav-item"><span class="nav-icon">▤</span><span>Knowledge base</span></button>
-          <button class="nav-item"><span class="nav-icon">↗</span><span>Automations</span></button>
-          <button class="nav-item"><span class="nav-icon">⌘</span><span>Connections</span></button>
-        </nav>
-
-        <div class="sidebar-section">
-          <div class="section-label">Workspaces</div>
-          <button class="nav-item small"><span class="workspace-dot purple"></span><span>Personal lab</span></button>
-          <button class="nav-item small"><span class="workspace-dot orange"></span><span>Product studio</span></button>
-        </div>
-
-        <div class="sidebar-section chats-section">
-          <div class="section-label">Recent journeys</div>
-          <div id="chatList" class="chat-list"></div>
-        </div>
-
-        <div class="user-card">
-          <div class="profile-round" id="profileAvatar">V</div>
-          <div class="profile-meta"><span class="name" id="profileName">Account</span><span class="plan" id="profileDetails"></span></div>
-          <button class="icon-button" id="accountAction" type="button">Sign out</button>
-        </div>
+        <h2>Recent chats</h2>
+        <div id="chatList" class="chat-list"></div>
       </aside>
 
       <main class="main-panel">
         <header class="topbar">
-          <div class="mode-switch" aria-label="Voyager mode switcher">
-            <button class="mode-button active" data-mode="ask">Ask</button>
-            <button class="mode-button" data-mode="agent">Agent</button>
-          </div>
-          <div class="top-actions">
-            <span class="workspace-status"><span class="status-dot"></span> Personal lab</span>
-            <button class="icon-button" id="settingsButton" aria-label="API settings">⚙</button>
-          </div>
+          <label for="modeSelect">Mode</label>
+          <select id="modeSelect">
+            <option value="ask">Ask</option>
+            <option value="agent">Agent</option>
+          </select>
+          <button id="settingsButton" type="button">Settings</button>
         </header>
 
-        <div class="main-content" id="mainContent">
-          <div id="messages" class="messages"></div>
+        <section id="mainContent" class="main-content" aria-live="polite">
           <div id="emptyState" class="empty-state">
-            <div class="welcome-kicker">YOUR AI COMPANION</div>
-            <h1>What are you exploring?</h1>
-            <p>Ask a question or hand off a multi-step task to Voyager.</p>
+            <h1>What can I help with?</h1>
+            <p>Enter a message below to start a chat.</p>
           </div>
-        </div>
+          <div id="messages" class="messages"></div>
+        </section>
 
-        <div class="composer-shell">
-          <div class="composer">
-            <button class="plus-button" aria-label="Add content">＋</button>
-            <textarea id="promptInput" rows="1" placeholder="Ask Voyager anything"></textarea>
-            <div class="composer-tools">
-              <button class="tool-button" type="button">Attach</button>
-              <button class="tool-button" type="button">⌁</button>
-              <button class="tool-button send-button" id="sendButton" type="button" aria-label="Send prompt">↑</button>
-            </div>
-          </div>
-        </div>
+        <form id="composerForm" class="composer">
+          <label class="visually-hidden" for="promptInput">Message Voyager</label>
+          <textarea id="promptInput" rows="2" placeholder="Message Voyager" required></textarea>
+          <button id="sendButton" type="submit">Send</button>
+        </form>
       </main>
     </div>
 
-    <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <div class="modal-card">
-        <div class="modal-header"><h2 id="settingsTitle">Voyager API settings</h2><button id="closeSettings" class="close-button" aria-label="Close settings">×</button></div>
-        <div class="form-group"><label for="apiBaseUrl">Base URL</label><input id="apiBaseUrl" type="text" placeholder="https://api.openai.com/v1" /></div>
-        <div class="form-group"><label for="apiKey">API Key</label><input id="apiKey" type="password" placeholder="sk-... or Google OAuth token" /></div>
-        <div class="form-group"><label for="apiModel">Model</label><input id="apiModel" type="text" placeholder="gpt-4o-mini or gemini-2.0-flash" /></div>
-        <div class="form-group"><label for="googleCloudProjectId">Google Cloud Project ID</label><input id="googleCloudProjectId" type="text" placeholder="same project as Voyager Agent" /></div>
-        <div class="form-group"><label for="googleCloudRegion">Google Cloud Region</label><input id="googleCloudRegion" type="text" placeholder="us-central1" /></div>
-        <div class="form-actions"><button class="secondary-btn" id="resetSettings">Reset</button><button class="primary-btn" id="saveSettings">Save</button></div>
-      </div>
-    </div>
-    <script src="Backend/app.js"></script>
+    <dialog id="settingsModal" aria-labelledby="settingsTitle">
+      <form id="settingsForm" method="dialog">
+        <h2 id="settingsTitle">AI settings</h2>
+        <label for="apiBaseUrl">API base URL</label>
+        <input id="apiBaseUrl" type="url" placeholder="https://api.openai.com/v1" />
+        <label for="apiKey">API key</label>
+        <input id="apiKey" type="password" autocomplete="off" />
+        <label for="apiModel">Model</label>
+        <input id="apiModel" type="text" placeholder="gpt-4o-mini" />
+        <div class="dialog-actions">
+          <button id="resetSettings" type="button">Reset</button>
+          <button id="closeSettings" type="button">Cancel</button>
+          <button id="saveSettings" type="button">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="Backend/app.js" defer></script>
   </body>
 </html>
