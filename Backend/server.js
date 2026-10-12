@@ -39,8 +39,13 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const systemPrompt = getSystemPrompt(mode === 'agent' ? 'agent' : 'ask');
+    const provider = resolveProvider(safeSettings);
     const requestSettings = {
-      model: safeSettings.apiModel || process.env.OPENAI_MODEL || process.env.GEMINI_MODEL || 'gpt-4o-mini',
+      model: provider === 'google-gemini'
+        ? (safeSettings.apiModel?.startsWith('gemini-')
+          ? safeSettings.apiModel
+          : process.env.GEMINI_MODEL || 'gemini-3.8-flash')
+        : safeSettings.apiModel || process.env.OPENAI_MODEL || 'gpt-4o-mini',
       apiKey: safeSettings.apiKey || process.env.OPENAI_API_KEY || '',
       googleCloudProjectId: safeSettings.googleCloudProjectId || process.env.GOOGLE_CLOUD_PROJECT_ID || '',
       googleCloudRegion: safeSettings.googleCloudRegion || process.env.GOOGLE_CLOUD_REGION || 'us-central1',
@@ -78,6 +83,14 @@ function getSystemPrompt(mode) {
 }
 
 function resolveProvider(settings = {}) {
+  if (
+    (settings.apiKey && settings.apiKey === process.env.GEMINI_API_KEY) ||
+    settings.apiKey?.startsWith('AIza') ||
+    settings.apiModel?.startsWith('gemini-') ||
+    settings.apiBaseUrl?.includes('generativelanguage.googleapis.com')
+  ) {
+    return 'google-gemini';
+  }
   if (process.env.OPENAI_API_KEY || settings.apiKey) {
     return 'openai';
   }
@@ -142,12 +155,12 @@ async function callOpenAI(messages, systemPrompt, settings) {
 }
 
 async function callGoogleGemini(messages, systemPrompt, settings) {
-  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = settings.apiKey || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return buildDemoResponse(messages, systemPrompt);
   }
 
-  const model = settings.model || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = settings.model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -172,7 +185,7 @@ async function callGoogleGemini(messages, systemPrompt, settings) {
 async function callVertex(messages, systemPrompt, settings) {
   const projectId = settings.googleCloudProjectId || process.env.GOOGLE_CLOUD_PROJECT_ID;
   const region = settings.googleCloudRegion || process.env.GOOGLE_CLOUD_REGION || 'us-central1';
-  const model = settings.model || process.env.GOOGLE_CLOUD_MODEL || 'gemini-2.0-flash';
+  const model = settings.model || process.env.GOOGLE_CLOUD_MODEL || 'gemini-3.8-flash';
 
   if (!projectId) {
     return buildDemoResponse(messages, systemPrompt);
